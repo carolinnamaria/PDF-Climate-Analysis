@@ -10,13 +10,6 @@ This project focuses on extracting valuable insights from PDF documents (foreign
 - **Contextual Word Extraction:** Identifying the seven words that precede and succeed each occurrence for deeper understanding.
 - **Word Cloud Generation:** Visualizing the extracted information through captivating word clouds.
 
-## Project Structure
-
-- [`PDF-Climate-Analysis.ipynb`](https://colab.research.google.com/PDF_Climate_Analysis.ipynb): Open this notebook in [Google Colab](https://colab.research.google.com/PDF_Climate_Analysis.ipynb) to perform the document analysis.
-
-## Getting Started
-
-1. 📋 Install dependencies using `!pip install -r requirements.txt` (in the Colab notebook).
 
 ## Contributions
 
@@ -26,6 +19,6 @@ Contributions are welcome! If you have ideas for improvements, additional featur
 
 Join us in exploring the rich world of climate-related documents and contributing to a better understanding of the challenges we face.
 
-🌐 Connect with me on [LinkedIn](https://www.linkedin.com/in/your-username).
+🌐 Connect with me on [LinkedIn](https://www.linkedin.com/in/carolinnamaria).
 
 Happy coding and happy exploring! 🌟
