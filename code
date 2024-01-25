@@ -1,0 +1,113 @@
+# Install the libraries NLKT and stopwords download
+
+!pip install PyPDF2 --upgrade
+!pip install pdfminer.six
+
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+import os
+import re
+from PyPDF2 import PdfReader
+
+nltk.download('stopwords')
+nltk.download('punkt')
+
+
+# Import Google Drive - where the folders are
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Setlist of excluded words: feed this list according to the results obtained in the word cloud 
+#that may hinder the interpretation of the result, such as specific words, prepositions, adverbs, etc
+excluded_words = set(['word1', 'word2', 'word3'])
+prepositions = set(stopwords.words('portuguese'))  # prepositions in the language of the PDF
+adverbs = set(stopwords.words('portuguese')) - {'não'}  # adverbs (excluding the word "no" in the language of the PDF)
+
+#Select the key-word. In this case the key-word was "climate change" in portuguese and some variables of the expression
+target_words = ["mudança do clima", "mudanças climáticas", "mudança climática", "mudança global do clima"]
+
+# Function to get words before and after the search word, excluding prepositions, adverbs and specific words
+def get_context_words(file_paths, target_words):
+    context_words = []
+
+    for file_path in file_paths:
+        with open(file_path, 'rb') as file:
+            pdf_reader = PdfReader(file)
+            num_pages = len(pdf_reader.pages)
+
+            for page_num in range(num_pages):
+                page = pdf_reader.pages[page_num]
+                text = page.extract_text()
+
+                # Tokenization
+                tokens = word_tokenize(text.lower())
+
+                # Find indexes of the words searched
+                indexes = [i for i, token in enumerate(tokens) if token in target_words]
+
+                # Exclude prepositions, adverbs and quoted words from context words
+                for index in indexes:
+                    if index >= 7 and index + 8 <= len(tokens):
+                        context_before = [word for word in tokens[index - 7:index] if word.isalnum() and word not in prepositions and word not in adverbs and word not in excluded_words]
+                        context_after = [word for word in tokens[index + 1:index + 8] if word.isalnum() and word not in prepositions and word not in adverbs and word not in excluded_words]
+                        context_words.extend(context_before + context_after)
+
+    return context_words
+
+# Function to create word clouds with variable size and black color
+def generate_wordcloud(text, year):
+    # Tokenization and removal of stopwords, prepositions, adverbs and specific words
+    stop_words = set(stopwords.words('portuguese')) | prepositions | adverbs | excluded_words
+    tokens = word_tokenize(text.lower())
+    filtered_tokens = [word for word in tokens if word.isalnum() and word not in stop_words and word not in excluded_words]
+
+    # If there are no words after filtering, do not create the word cloud
+    if not filtered_tokens:
+        print(f"No words to create the word cloud for the year {year}.")
+        return
+
+    # Creation of the word cloud with variable size and black color
+    filtered_text = ' '.join(filtered_tokens)
+    wordcloud = WordCloud(width=800, height=400, background_color='white', colormap='gray', color_func=lambda *args, **kwargs: 'black').generate(filtered_text)
+
+    # Word cloud display
+    plt.figure(figsize=(10, 5))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.title(f"Nuvem de Palavras - Ano {year}")
+    plt.axis('off')
+    plt.show()
+
+# Folder in Google Drive: write the path of the folder with the PDFs in google drive
+folder_path = "/content/drive/MyDrive/Path_of_your_folder_with_the_PDFs"
+
+# Dictionary to store PDF file paths for each year
+file_paths_by_year = {}
+
+# Processing the PDF files in the folder
+for file_name in os.listdir(folder_path):
+    if file_name.endswith('.pdf'):
+        file_path = os.path.join(folder_path, file_name)
+
+        # In the case of the texts I used, the year was in the title of each PDF. 
+        # Here's how to extract the year from the title using a regular expression so that you can analyze the documents by year
+        match = re.search(r'\b(20\d{2})\b', file_name)
+        if match:
+            year = int(match.group())
+
+            # Adding the file path to the dictionary corresponding to the year
+            if year not in file_paths_by_year:
+                file_paths_by_year[year] = []
+            file_paths_by_year[year].append(file_path)
+
+# Creating word clouds for each year
+for year, file_paths in file_paths_by_year.items():
+    print(f"Analyzing documents for the year {year}:")
+    context_words = get_context_words(file_paths, target_words)
+    print(f'Context words {target_words} - year {year}:', context_words)
+
+    # Creating a word cloud for the year
+    all_text = ' '.join([page.extract_text() for file_path in file_paths for page in PdfReader(file_path).pages])
+    generate_wordcloud(all_text, year)
